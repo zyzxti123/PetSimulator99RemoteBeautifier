@@ -1,7 +1,19 @@
-local Network = getsenv(game.ReplicatedStorage.Library.Client.Network)
+local functions = {
+    ["getsenv"] = getsenv,
+    ["hookfunction"] = hookfunction,
+    ["getupvalue"] = debug.getupvalue or getupvalue,
+}
+
+for key: string, value: (...any) -> (...any) in pairs(functions) do
+    if not value then
+        return game.Players.LocalPlayer:Kick(`[Z-Ware]: Unsupported Exploit: {key}`)
+    end
+end
+
+local network = getsenv(game.ReplicatedStorage.Library.Client.Network)
 
 local remoteReversedNamesHashedStorage = {{}, {}, {}}
-local remoteHashedNamesStorage  = debug.getupvalue(Network._getName, 1)
+local remoteHashedNamesStorage  = debug.getupvalue(network._getName, 1)
 for remoteType, remoteStorage in next, remoteHashedNamesStorage do
     for remoteName: string, remoteHashedName: string in next, remoteStorage do
         remoteReversedNamesHashedStorage[remoteType][remoteHashedName] = remoteName
@@ -10,7 +22,7 @@ for remoteType, remoteStorage in next, remoteHashedNamesStorage do
     end
 end
 
-local remotesInstanceStorage = debug.getupvalue(Network._remote, 1)
+local remotesInstanceStorage = debug.getupvalue(network._remote, 1)
 for remoteType: number, remoteStorage: {[number]: {[string]: RemoteFunction | RemoteEvent | UnreliableRemoteEvent}} in next, remotesInstanceStorage do
     for remoteHashedName: string, remoteInstance: RemoteFunction | RemoteEvent in next, remoteStorage do
 		local remoteName = remoteReversedNamesHashedStorage[remoteType][remoteHashedName]
@@ -18,7 +30,7 @@ for remoteType: number, remoteStorage: {[number]: {[string]: RemoteFunction | Re
 			remotesInstanceStorage[remoteType][remoteHashedName].Name = remoteName
 			remotesInstanceStorage[remoteType][remoteName] = remotesInstanceStorage[remoteType][remoteHashedName]
 			remotesInstanceStorage[remoteType][remoteHashedName] = nil
-
+            
 			warn(`[Z-Ware]: Dehashed: {remoteHashedName} → {remoteName}`)
 		else
 			 warn(`[Z-Ware]: Failed To Dehash: {remoteHashedName}!`)
@@ -26,11 +38,11 @@ for remoteType: number, remoteStorage: {[number]: {[string]: RemoteFunction | Re
     end
 end
 
-local _orginalGetName; _orginalGetName = hookfunction(Network._getName, function(remoteType: number, remoteName: string): string
+local _orginalGetName; _orginalGetName = hookfunction(network._getName, function(remoteType: number, remoteName: string): string
     return remoteName
 end)
 
-local _orginalRemote; _orginalRemote = hookfunction(Network._remote, function(remoteType: number, remoteName: string): (RemoteFunction | RemoteEvent | UnreliableRemoteEvent)
+local _orginalRemote; _orginalRemote = hookfunction(network._remote, function(remoteType: number, remoteName: string): (RemoteFunction | RemoteEvent | UnreliableRemoteEvent)
 	local remoteHashedName = _orginalGetName(remoteType, remoteName)
 	local remoteInstanceStorage = remotesInstanceStorage[remoteType]
 	local remoteInstance = remoteInstanceStorage[remoteHashedName] or remoteInstanceStorage[remoteName]
